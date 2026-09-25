@@ -1,15 +1,166 @@
 <!doctype html><html lang="fr"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
-<meta name="theme-color" content="#0b0b0d"><meta name="description" content="Workout Timer">
+<meta name="theme-color" content="#0b0b0d"><meta name="description" content="Chronomètre d'entraînement — AMRAP, EMOM, Tabata, intervalles et séquences personnalisées.">
 <link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icons/icon-192.png"><link rel="stylesheet" href="styles.css">
 <title>Workout Timer</title></head><body>
 <main id="app">
-<section id="setup" class="screen"><header class="topbar"><div><div class="eyebrow">WORKOUT TIMER</div><h1>Prêt à t'entraîner ?</h1></div><button id="installBtn" class="icon-btn hidden">＋</button></header>
-<div class="mode-grid" id="modeGrid"></div><section class="card" id="settingsCard"></section>
-<button id="startBtn" class="primary big">DÉMARRER</button>
-<section class="saved-section"><div class="section-title"><h2>Mes workouts</h2><button id="newWorkoutBtn" class="small-btn">+ Nouveau</button></div><div id="savedList"></div></section></section>
-<section id="timer" class="screen hidden"><header class="timer-topbar"><button id="exitBtn" class="ghost">QUITTER</button><div id="timerTitle">WORKOUT</div><button id="soundBtn" class="ghost">🔊</button></header>
-<div class="timer-content"><div id="prepLabel" class="phase-label">GET READY</div><div id="phaseLabel" class="phase-label hidden">WORK</div><div id="timeDisplay" class="time-display">00:10</div><div id="roundDisplay" class="round-display">ROUND 1 / 10</div><div id="totalDisplay" class="total-display"></div><div class="progress-wrap"><div id="progressBar" class="progress-bar"></div></div>
-<div class="timer-actions"><button id="skipBtn" class="secondary">SKIP</button><button id="pauseBtn" class="primary circle">Ⅱ</button><button id="finishBtn" class="secondary hidden">FINISH</button></div></div></section>
-<section id="done" class="screen hidden"><div class="done-box"><div class="done-icon">✓</div><div class="eyebrow">WORKOUT TERMINÉ</div><h1 id="doneTitle">Bien joué.</h1><div id="doneTime" class="done-time">00:00</div><button id="doneBackBtn" class="primary big">RETOUR</button></div></section>
+
+<!-- HOME -->
+<section id="home" class="screen">
+  <header class="home-header">
+    <div>
+      <div class="brand">Workout Timer</div>
+      <h1>Prêt à t'entraîner ?</h1>
+    </div>
+    <div class="header-actions">
+      <button id="installBtn" class="icon-btn hidden" aria-label="Installer">⭳</button>
+      <button id="settingsBtn" class="icon-btn" aria-label="Réglages">⚙</button>
+    </div>
+  </header>
+
+  <div class="tabs" id="tabs">
+    <button class="tab active" data-tab="mine">Mes workouts</button>
+    <button class="tab" data-tab="fav">Favoris</button>
+    <button class="tab" data-tab="recent">Récents</button>
+  </div>
+
+  <div id="workoutList" class="workout-list"></div>
+  <div id="emptyState" class="empty-state hidden">
+    <div class="empty-icon">＋</div>
+    <p id="emptyText">Crée ton premier workout.</p>
+  </div>
+
+  <button id="fabNew" class="fab" aria-label="Nouveau workout">+</button>
+</section>
+
+<!-- EDITOR -->
+<section id="editor" class="screen hidden">
+  <header class="editor-topbar">
+    <button id="editorBack" class="ghost">ANNULER</button>
+    <div id="editorTitle">NOUVEAU WORKOUT</div>
+    <button id="editorFav" class="icon-btn ghost" aria-label="Favori">☆</button>
+  </header>
+
+  <div class="editor-body">
+    <input id="nameInput" class="text-input big-input" maxlength="40" placeholder="Nom du workout">
+
+    <div class="mode-grid" id="modeGrid"></div>
+
+    <section class="card" id="settingsCard"></section>
+
+    <section class="card hidden" id="customCard">
+      <div class="card-title-row">
+        <div class="card-title">Séquence</div>
+        <button id="addBlockBtn" class="small-btn">+ Bloc</button>
+      </div>
+      <div id="blockList" class="block-list"></div>
+      <div class="setting-row">
+        <div>
+          <div class="setting-label">Tours</div>
+          <div class="setting-help">Nombre de fois où la séquence se répète</div>
+        </div>
+        <div class="stepper">
+          <button data-custom-round="-1">−</button>
+          <div class="value" id="customRoundsValue">1</div>
+          <button data-custom-round="1">+</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="editor-actions">
+    <button id="duplicateBtn" class="secondary hidden">DUPLIQUER</button>
+    <button id="deleteBtn" class="secondary danger hidden">SUPPRIMER</button>
+  </div>
+  <div class="editor-actions">
+    <button id="saveBtn" class="secondary">ENREGISTRER</button>
+    <button id="startBtn" class="primary big">DÉMARRER</button>
+  </div>
+</section>
+
+<!-- TIMER -->
+<section id="timer" class="screen hidden" data-phase="prep">
+  <header class="timer-topbar">
+    <button id="exitBtn" class="ghost">QUITTER</button>
+    <div id="timerTitle">WORKOUT</div>
+    <button id="soundBtn" class="ghost">🔊</button>
+  </header>
+
+  <div class="timer-content">
+    <div id="phaseLabel" class="phase-label">PRÊT</div>
+    <div id="blockLabel" class="block-label hidden"></div>
+    <div id="timeDisplay" class="time-display">00:10</div>
+    <div id="countdownDisplay" class="countdown-display hidden"></div>
+    <div id="roundDisplay" class="round-display">ROUND 1 / 10</div>
+    <div id="totalDisplay" class="total-display"></div>
+    <div class="progress-wrap"><div id="progressBar" class="progress-bar"></div></div>
+
+    <div class="timer-actions">
+      <button id="skipBtn" class="secondary">SKIP</button>
+      <button id="pauseBtn" class="primary circle">Ⅱ</button>
+      <button id="finishBtn" class="secondary hidden">FINISH</button>
+    </div>
+  </div>
+</section>
+
+<!-- DONE -->
+<section id="done" class="screen hidden">
+  <div class="done-box">
+    <div class="done-icon">✓</div>
+    <div class="eyebrow">WORKOUT TERMINÉ</div>
+    <h1 id="doneTitle">Bien joué.</h1>
+    <div id="doneTime" class="done-time">00:00</div>
+    <div id="doneSummary" class="done-summary"></div>
+    <div class="done-actions">
+      <button id="doneRepeatBtn" class="secondary">RECOMMENCER</button>
+      <button id="doneBackBtn" class="primary big">RETOUR</button>
+    </div>
+  </div>
+</section>
+
+<!-- SETTINGS OVERLAY -->
+<div id="settingsOverlay" class="overlay hidden">
+  <div class="overlay-card">
+    <div class="overlay-header">
+      <div class="overlay-title">Réglages</div>
+      <button id="settingsClose" class="icon-btn ghost">✕</button>
+    </div>
+    <div class="overlay-body">
+      <div class="setting-row">
+        <div class="setting-label">Son</div>
+        <select id="soundModeSelect" class="select-input">
+          <option value="both">Bips + Voix</option>
+          <option value="beep">Bips seuls</option>
+          <option value="voice">Voix seule</option>
+          <option value="off">Muet</option>
+        </select>
+      </div>
+      <div class="setting-row">
+        <div class="setting-label">Voix</div>
+        <select id="voiceSelect" class="select-input"><option value="">Automatique</option></select>
+      </div>
+      <div class="setting-row" style="flex-direction:column;align-items:stretch;gap:8px">
+        <div class="setting-label">Volume</div>
+        <input id="volumeSlider" type="range" min="0" max="100" value="80">
+      </div>
+      <div class="overlay-divider"></div>
+      <div class="setting-row">
+        <div>
+          <div class="setting-label">Exporter mes workouts</div>
+          <div class="setting-help">Sauvegarder au format JSON</div>
+        </div>
+        <button id="exportBtn" class="small-btn">Exporter</button>
+      </div>
+      <div class="setting-row">
+        <div>
+          <div class="setting-label">Importer des workouts</div>
+          <div class="setting-help">Depuis un fichier JSON</div>
+        </div>
+        <button id="importBtn" class="small-btn">Importer</button>
+      </div>
+      <input type="file" id="importFile" accept="application/json" class="hidden">
+    </div>
+  </div>
+</div>
+
 </main><script src="app.js"></script></body></html>
